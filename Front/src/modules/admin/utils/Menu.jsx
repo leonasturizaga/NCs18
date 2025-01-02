@@ -1,37 +1,50 @@
-import {Backup, BarChart, CardTravel, Hiking, Insights, SupervisedUserCircle} from "@mui/icons-material";
+// Front/src/modules/admin/utils/Menu.jsx
+import { RiChatQuoteLine, RiGroupLine, RiWalkLine, RiMapPinLine,  } from 'react-icons/ri';
+// RiImage2Line, RiSettings4Line, RiAccountCircleLine,
+
 
 export const MenuOptionsTop = [
     {
-        title: 'Paquetes',
-        icon: <CardTravel />,
+        title: 'Paquetes / Destinos',
+        icon: <RiWalkLine />,
         to: '/admin/paquetes'
     },
     {
         title: 'Salidas',
-        icon: <Hiking />,
+        icon: <RiMapPinLine />,
         to: '/admin/salidas'
     },
     {
-        title: 'Usuarios',
-        icon: <SupervisedUserCircle />,
-        to: '/admin/usuarios'
+        title: 'Comentarios',
+        icon: <RiChatQuoteLine />,
+        to: '/admin/comentarios'
     },
     {
-        title: 'Imagenes',
-        icon: <Backup />,
-        to: '/admin/imagenes'
-    }
+        title: 'Usuarios / Staff',
+        icon: <RiGroupLine />,
+        to: '/admin/usuarios'
+    },
+    // {
+    //     title: 'Paquetes',
+    //     icon: <CardTravel />,
+    //     to: '/admin/paquetes'
+    // },
+    // {
+    //     title: 'Imágenes',
+    //     icon: <RiImage2Line />,
+    //     to: '/admin/paquetes'
+    // },
 ]
 
 export const MenuOptionsBottom = [
-    {
-        title: 'Reportes',
-        icon: <BarChart />,
-        to: '/admin/reportes'
-    },
-    {
-        title: 'Tráfico',
-        icon: <Insights />,
-        to: '/admin/trafico'
-    }
+    // {
+    //     title: 'Reportes',
+    //     icon: <BarChart />,
+    //     to: '/admin/reportes'
+    // },
+    // {
+    //     title: 'Tráfico',
+    //     icon: <Insights />,
+    //     to: '/admin/trafico'
+    // }
 ]

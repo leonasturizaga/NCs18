@@ -8,7 +8,7 @@ import ToggleColorMode from "../theme/ToggleColorMode.jsx";
 import {useGlobalTheme} from "../hooks/useGlobalTheme.jsx";
 import {AccountCircle, AdminPanelSettings, Home, ManageAccounts, Settings} from "@mui/icons-material";
 import Divider from "@mui/material/Divider";
-import {Button, menuItemClasses, MenuList, Typography} from "@mui/material";
+import {Button, menuItemClasses, MenuList, Typography, useMediaQuery, useTheme} from "@mui/material";
 import {NotificationService} from "../services/notistack.service.jsx";
 import {useAuth} from "../hooks/useAuth.jsx";
 import {useUserData} from "../hooks/useUserData.jsx";
@@ -24,7 +24,7 @@ const data = [
     },
     {
         label: 'Mi Perfil',
-        href: '#',
+        href: '/perfil',
         icon: <ManageAccounts />,
     },
     {
@@ -39,9 +39,11 @@ const data = [
     },
 ]
 
-export function UserPopover() {
+export function UserPopover({ setIsOpenDrawer = () => {} }) {
 
     const [open, setOpen] = useState(false);
+    const theme = useTheme();
+    const isMobileTablet = useMediaQuery(theme.breakpoints.down('md'));
 
     const toggleDrawer = (newOpen) => () => {
         setOpen(newOpen);
@@ -55,6 +57,7 @@ export function UserPopover() {
 
     const handleClick = () => {
         NotificationService.info('Vuelve pronto!');
+        if(isMobileTablet) setIsOpenDrawer(false);
         handleLogout();
     };
 
@@ -81,6 +84,7 @@ export function UserPopover() {
 
         navigate( path );
         handleClosePopover();
+        setIsOpenDrawer(false);
     },
     [handleClosePopover]
   );
