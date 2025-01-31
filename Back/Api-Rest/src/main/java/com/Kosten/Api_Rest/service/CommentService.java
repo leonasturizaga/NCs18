@@ -22,8 +22,10 @@ public interface CommentService {
 
     CommentDto updateCommentFavorite(UpdateFavoriteCommentDto updateFavoriteCommentDto);
 
-    List<CommentDto> findVisibleAndFavoriteComments();
+    List<CommentDtoResponse2> findVisibleAndFavoriteComments();
 
     CPackageResponse findCommentWithPackageById(Long commentId);
+
+    PackageCResponse findByPackageRef_Id (Long packageId);
 
 }

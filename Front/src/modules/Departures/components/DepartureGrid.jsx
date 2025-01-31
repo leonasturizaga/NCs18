@@ -1,26 +1,21 @@
 // Front/src/modules/Departures/components/DepartureGrid.jsx
-import { CircularProgress, Typography } from "@mui/material";
+import { Alert, AlertTitle, CircularProgress, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import { DepartureCard } from "./DepartureCard.jsx";
 import { customPalette } from "../../../../customStyle.jsx";
 import { getAllActivesPackages } from "../../../api/packageApi.js";
 import { useCallback, useEffect, useState } from "react";
 import { NotificationService } from "../../../shared/services/notistack.service.jsx";
-import { processDepartures } from "../utils/utils.jsx";
 
 const DepartureGrid = ({ title="PRÓXIMAS SALIDAS", sx={}}) => {
   const [isFetching, setIsFetching] = useState(true);
   const [allPackages, setAllPackages] = useState(null);
-  // const [filteredPackages, setFilteredPackages] = useState(null);
 
-  // Función para obtener todas las salidas
   const fetchDepartures = useCallback( async () => {
     setIsFetching(true);
     try {
-        const response = await getAllActivesPackages(); // Axios devuelve 'data' directamente
-        console.log('data', response?.data?.data?.content);
+        const response = await getAllActivesPackages();
         setAllPackages(response?.data?.data?.content);
-        // NotificationService.success('Las salidas fueron cargadas con éxito');
         setIsFetching(false);
     } catch (error) {
         console.error(error);
@@ -30,20 +25,9 @@ const DepartureGrid = ({ title="PRÓXIMAS SALIDAS", sx={}}) => {
     }
   }, [])
 
-
-// Obtiene todas las salidas al cargar el componente
-useEffect(() => {
-  fetchDepartures();
-}, [])
-
-// Filtra las salidas para que sean solo las de destino activos, que sean futuras y ordenadas por fecha
-// useEffect(() => {
-//   if (!allPackages) return
-//   const filteredResponse = processDepartures(allPackages);
-//   console.log('filteredResponse', filteredResponse);
-//   setFilteredPackages(filteredResponse)
-// }, [allPackages])
-
+  useEffect(() => {
+    fetchDepartures();
+  }, [])
 
   return (
     <Box sx={{ 
@@ -59,18 +43,33 @@ useEffect(() => {
         <Typography variant='titleH1' gutterBottom sx={{ textAlign: 'center', color: customPalette.text.light }}>
           {title}
         </Typography>
-        <Box sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: {sx: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)'}, 
-          gap: '2rem' 
-
-        }}>
-          {isFetching ? <CircularProgress />
+        {isFetching ? <CircularProgress />
+        :
+          allPackages ?
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: {sx: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)'}, 
+              gap: '2rem' 
+            }}>
+              {allPackages.length !== 0 && allPackages?.map((pack) => (
+                pack?.active && <DepartureCard key={`departure-${pack.id}`} pack={pack} />
+              ))}
+            </Box>
           :
-          allPackages.length !== 0 && allPackages?.map((departure) => (
-            departure?.active && <DepartureCard key={`departure-${departure.id}`} departure={departure} />
-          ))}
-        </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "30dvh",
+              }}
+            >
+              <Alert severity="info" sx={{ width: "90dvw" }}>
+                <AlertTitle>Sin salidas</AlertTitle>
+                No hay salidas para mostrar.
+              </Alert>
+            </Box>
+        }
       </Box>
     </Box>
   );

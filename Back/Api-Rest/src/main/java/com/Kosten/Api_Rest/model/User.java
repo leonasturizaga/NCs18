@@ -33,6 +33,9 @@ public class User implements UserDetails {
     Role role;
     @Column(name = "is_active")
     private Boolean isActive;
+    private String resetToken;
+
+    private Boolean payment;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonManagedReference
@@ -42,14 +45,6 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "departure_id", referencedColumnName = "id")
     )
     private List<Departure> departures = new ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_package",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "package_id")
-    )
-    private Set<Package> packages = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -66,21 +61,24 @@ public class User implements UserDetails {
         return username;
     }
 
+    public String getRole1() {
+        return role.name();
+    }
+
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
-    }
+    public boolean isAccountNonLocked() { return UserDetails.super.isAccountNonLocked(); }
 
     @Override
     public boolean isCredentialsNonExpired() { return UserDetails.super.isCredentialsNonExpired(); }
 
     @Override
-    public boolean isEnabled() { return UserDetails.super.isEnabled(); }
+    public boolean isEnabled() { return isActive; }
 
     public User update(UpdateUserRequestDto updateUserRequestDto) {
         if (updateUserRequestDto.email() != null)
@@ -91,6 +89,9 @@ public class User implements UserDetails {
 
         if (updateUserRequestDto.contact() != null)
             this.contact = updateUserRequestDto.contact();
+
+        if (updateUserRequestDto.payment() != null)
+            this.payment = updateUserRequestDto.payment();
 
         return this;
     }

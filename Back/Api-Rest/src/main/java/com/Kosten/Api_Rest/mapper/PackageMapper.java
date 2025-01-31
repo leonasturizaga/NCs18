@@ -7,11 +7,15 @@ import com.Kosten.Api_Rest.dto.packageDTO.PackageToUpdateDTO;
 import com.Kosten.Api_Rest.model.Package;
 import org.mapstruct.*;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {DepartureMapper.class})
 public interface PackageMapper {
+
+    @Mappings({
+            @Mapping(target = "category", ignore = true)
+    })
     Package toEntity(PackageRequestDTO packageRequestDTO);
 
-    PackageRequestDTO packageToPackageRequestDTO(Package package_);
+    //PackageRequestDTO packageToPackageRequestDTO(Package package_);
 
     Package toEntity(PackageResponseDTO packageResponseDTO);
 
@@ -21,7 +25,6 @@ public interface PackageMapper {
 
     PackageToUpdateDTO packageToPackageToUpdateDTO(Package package_);
 
-    @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
     @Mapping(target = "images", source = "images")
     PackageDto toPackageDto(Package packageEntity);

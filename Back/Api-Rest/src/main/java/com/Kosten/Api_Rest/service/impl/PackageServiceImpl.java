@@ -7,13 +7,15 @@ import com.Kosten.Api_Rest.dto.ExtendedBaseResponse;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageRequestDTO;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageResponseDTO;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageToUpdateDTO;
-import com.Kosten.Api_Rest.mapper.DepartureMapper;
 import com.Kosten.Api_Rest.mapper.PackageMapper;
+import com.Kosten.Api_Rest.model.Category;
 import com.Kosten.Api_Rest.model.Departure;
 import com.Kosten.Api_Rest.model.Image;
 import com.Kosten.Api_Rest.model.Package;
+import com.Kosten.Api_Rest.repository.CategoryRepository;
 import com.Kosten.Api_Rest.repository.ImageRepository;
 import com.Kosten.Api_Rest.repository.PackageRepository;
+import com.Kosten.Api_Rest.service.CategoryService;
 import com.Kosten.Api_Rest.service.ImageService;
 import com.Kosten.Api_Rest.service.PackageService;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +23,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.Kosten.Api_Rest.repository.IDepartureRepository;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.stream.Collectors;
 
-import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -31,31 +36,58 @@ public class PackageServiceImpl implements PackageService {
 
     private final PackageRepository packageRepository;
     private final PackageMapper packageMapper;
-    private final DepartureMapper departureMapper;
     public final IDepartureRepository departureRepository;
     private final ImageRepository imageRepository;
     private final ImageService imageService;
+    private final CategoryService categoryService;
+    private final CategoryRepository categoryRepository;
 
-    public ExtendedBaseResponse<PackageResponseDTO> createPackage(PackageRequestDTO packageRequestDTO) {
+
+    @Transactional
+    public ExtendedBaseResponse<PackageResponseDTO> createPackage(PackageRequestDTO packageRequestDTO, List<MultipartFile> images, MultipartFile bannerImage) {
+
+        //primero creamos las imágenes
+        Image bannerPhotoCreated = imageService.createNewImage(bannerImage);
+
+        List<Image> imagesCreated = null;
+
+        if( images != null ){
+            imagesCreated = images.stream()
+                    .map(imageService::createNewImage)
+                    .collect(Collectors.toList());
+        }
+
+
+        Category category = categoryService.getCategoryByName(packageRequestDTO.category());
 
         Package packageEntity = packageMapper.toEntity(packageRequestDTO);
 
         var packageDB = packageRepository.save(packageEntity);
-        packageDB.setMonths(packageRequestDTO.all_months());
+        packageDB.setCategory(category);
+        category.addPackage(packageDB);
 
-        if( !packageRequestDTO.filesImages().isEmpty() ) {
-            packageRequestDTO.filesImages().forEach( file -> {
+        categoryRepository.save(category);
+
+        // Agregar imagenes al paquete
+        if( imagesCreated != null ) {
+            imagesCreated.forEach( file -> {
                 try {
-                    Image image = imageService.createNewImage(file);
-
-                    packageDB.addImage( image );
-
-                    imageRepository.save(image);
-
+                    packageDB.addImage( file );
+                    imageRepository.save(file);
                 } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
                 }
             });
+        }
+
+        // Agregar imagenes al banner
+        if (bannerPhotoCreated != null) {
+            try {
+                packageDB.addImageToBanner(bannerPhotoCreated);
+                imageRepository.save(bannerPhotoCreated);
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage());
+            }
         }
 
         PackageResponseDTO packageResponseDTO =  packageMapper.packageToPackageResponseDTO(packageDB);
@@ -122,11 +154,14 @@ public class PackageServiceImpl implements PackageService {
     public ExtendedBaseResponse<PackageResponseDTO> update(PackageToUpdateDTO packageToUpdateDTO) {
 
         Package packageEntity = packageRepository.findByIdAndActiveIsTrue(packageToUpdateDTO.id());
+        Category category = categoryRepository.findById(packageToUpdateDTO.idCategory())
+                .orElseThrow(() -> new PackageNotFoundException("Categoría no encontrada."));
 
         if (packageEntity == null) {
             throw new PackageNotFoundException("Paquete no encontrado.");
         }
 
+        packageEntity.setCategory(category);
         PackageResponseDTO packageResponseDTO = packageMapper.packageToPackageResponseDTO(packageEntity.update(packageToUpdateDTO));
 
         return ExtendedBaseResponse.of(

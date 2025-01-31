@@ -200,8 +200,8 @@ public class CommentController {
             @ApiResponse(responseCode = "500", description = "Error del servidor.", content = {@Content})
     })
     @GetMapping("/comments/visible-favorite")
-    public ResponseEntity<ExtendedBaseResponse<List<CommentDto>>> getVisibleAndFavoriteComments() {
-        List<CommentDto> comments = commentService.findVisibleAndFavoriteComments();
+    public ResponseEntity<ExtendedBaseResponse<List<CommentDtoResponse2>>> getVisibleAndFavoriteComments() {
+        List<CommentDtoResponse2> comments = commentService.findVisibleAndFavoriteComments();
         BaseResponse response = BaseResponse.ok("Comentarios visibles y favoritos obtenidos exitosamente.");
         return ResponseEntity.ok(ExtendedBaseResponse.of(response, comments));
     }
@@ -223,6 +223,25 @@ public class CommentController {
             CPackageResponse cPackageResponse = commentService.findCommentWithPackageById(commentId);
             BaseResponse response = BaseResponse.ok("Comentario y nombre del paquete recuperados exitosamente.");
             return ResponseEntity.ok(ExtendedBaseResponse.of(response, cPackageResponse));
+    }
+
+    @Operation(summary = "Obtener los comentarios de un paquete por ID",
+            description = "Devuelve todos los comentarios asociados a un paquete específico mediante su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Comentarios del paquete recuperados exitosamente.",
+                    content = {
+                            @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ExtendedBaseResponse.class))
+                    }),
+            @ApiResponse(responseCode = "404", description = "Paquete no encontrado.", content = {@Content}),
+            @ApiResponse(responseCode = "500", description = "Error del servidor.", content = {@Content})
+    })
+    @GetMapping("/packageId/{id}")
+    public ResponseEntity<ExtendedBaseResponse<PackageCResponse>> getCommentsByPackage(@PathVariable("id") Long packageId) {
+        PackageCResponse packageCResponse = commentService.findByPackageRef_Id(packageId);
+        BaseResponse response = BaseResponse.ok("Lista de los comentarios del paquete recuperados exitosamente.");
+        return ResponseEntity.ok(ExtendedBaseResponse.of(response, packageCResponse));
     }
 
 }

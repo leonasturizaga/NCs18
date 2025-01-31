@@ -1,6 +1,7 @@
 package com.Kosten.Api_Rest.model;
 
 import com.Kosten.Api_Rest.dto.packageDTO.PackageToUpdateDTO;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,9 @@ public class Package {
     private String technical_level;
     private String included_services;
     private boolean active;
+    private String locationInfo;
+    private String historyInfo;
+    private String activityInfo;
 
     /****************************************
      *  Relations with Month Names Entity
@@ -81,8 +85,23 @@ public class Package {
     @JsonManagedReference(value = "packageRef")
     private List<Image> images = new ArrayList<>();
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "banner_photo_id", referencedColumnName = "id")
+    private Image bannerPhoto;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "itinerary_photo_id", referencedColumnName = "id")
+    private Image itineraryPhoto;
+
+    @OneToMany(mappedBy = "packageDestinyRef", cascade = CascadeType.ALL)
+    private List<Image> destinyPhotos;
+
+
     //Helper Methods: Keep Both Sides of the Association in SYNC
     public void addImage(Image image) {
+        if (this.images == null) {
+            this.images = new ArrayList<>();
+        }
         this.images.add(image);
         image.setPackageRef(this);
     }
@@ -90,6 +109,27 @@ public class Package {
     public void deleteImage(Image image) {
         this.images.remove(image);
         image.setPackageRef(null);
+    }
+
+    public void addImageToBanner(Image image) {
+
+        this.bannerPhoto = image;
+        image.setPackageRef(this);
+    }
+
+
+    public void addImageToItinerary(Image image) {
+
+        this.itineraryPhoto = image;
+        image.setPackageRef(this);
+    }
+
+    public void addImageToDestiny(Image image) {
+        if (this.destinyPhotos == null) {
+            this.destinyPhotos = new ArrayList<>();
+        }
+        this.destinyPhotos.add(image);
+        image.setPackageDestinyRef(this);
     }
     /********End of Relations with Image Entity********/
 
@@ -175,6 +215,18 @@ public class Package {
 
         if (packageToUpdateDTO.included_services() != null)
             this.included_services = packageToUpdateDTO.included_services();
+
+        if (packageToUpdateDTO.active() != null)
+            this.active = packageToUpdateDTO.active();
+
+        if (packageToUpdateDTO.locationInfo() != null)
+            this.locationInfo = packageToUpdateDTO.locationInfo();
+
+        if (packageToUpdateDTO.historyInfo() != null)
+            this.historyInfo = packageToUpdateDTO.historyInfo();
+
+        if (packageToUpdateDTO.activityInfo() != null)
+            this.activityInfo =packageToUpdateDTO.activityInfo();
 
         return this;
     }

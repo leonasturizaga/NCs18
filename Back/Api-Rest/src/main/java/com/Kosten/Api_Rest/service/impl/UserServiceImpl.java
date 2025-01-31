@@ -13,7 +13,9 @@ import com.Kosten.Api_Rest.repository.IDepartureRepository;
 import com.Kosten.Api_Rest.repository.UserRepository;
 import com.Kosten.Api_Rest.service.UserService;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,13 +27,22 @@ public class UserServiceImpl implements UserService {
     private final IDepartureRepository departureRepository;
     private final UserMapper userMapper;
     private final DepartureMapper departureMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public ExtendedBaseResponse<UserResponseDto> update(UpdateUserRequestDto updateUser){
 
         User userToUpdate = userRepository.findById(updateUser.id()).orElseThrow(() ->
                 new IllegalArgumentException("Usuario con id: "+updateUser.id() +" no fue encontrado"));
 
-        UserResponseDto userResponseDto = userMapper.entityToDto(userToUpdate.update(updateUser));
+        User userToUpdated = userToUpdate.update(updateUser);
+
+        if(updateUser.password() != null){
+            userToUpdated.setPassword(passwordEncoder.encode(updateUser.password()));
+        }
+
+        userRepository.save(userToUpdated);
+
+        UserResponseDto userResponseDto = userMapper.entityToDto(userToUpdated);
 
         return ExtendedBaseResponse.of(
                 BaseResponse.ok("Los datos del usuario fueron modificados con exito"),
@@ -82,7 +93,7 @@ public class UserServiceImpl implements UserService {
     public BaseResponse delete(Long id){
 
         User user = userRepository.findById(id).orElseThrow(
-                ()-> new NotFoundUser()
+                NotFoundUser::new
         );
 
         user.delete();
@@ -118,6 +129,14 @@ public class UserServiceImpl implements UserService {
         return userResponseDtoList;
     }
 
-
+    @Override
+    @Transactional
+    public UserResponseDto updateUserIsActive(UserIsActiveDto userIsActiveDto){
+        User user = userRepository.findById(userIsActiveDto.userId()).orElseThrow(
+                () -> new UserNotFoundException("Usuario no encontrado con ID: " + userIsActiveDto.userId()));
+        user.setIsActive(userIsActiveDto.isActive());
+        User userSaved = userRepository.save(user);
+        return userMapper.entityToDto(userSaved);
+    }
 
 }

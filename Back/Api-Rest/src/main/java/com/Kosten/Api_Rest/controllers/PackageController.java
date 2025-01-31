@@ -2,9 +2,11 @@ package com.Kosten.Api_Rest.controllers;
 
 import com.Kosten.Api_Rest.dto.BaseResponse;
 import com.Kosten.Api_Rest.dto.ExtendedBaseResponse;
+import com.Kosten.Api_Rest.dto.images.ImageResponseDTO;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageRequestDTO;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageResponseDTO;
 import com.Kosten.Api_Rest.dto.packageDTO.PackageToUpdateDTO;
+import com.Kosten.Api_Rest.service.ImageService;
 import com.Kosten.Api_Rest.service.impl.PackageServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +28,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 @Tag(name = "Paquetes", description = "Maneja todos los endpoints de los Paquetes que se ofrecen.")
@@ -36,6 +37,8 @@ import java.util.List;
 public class PackageController {
 
     private final PackageServiceImpl packageService;
+    private final ImageService imageService;
+
 
     @Operation(
             summary = "Crear un nuevo Paquete.",
@@ -53,32 +56,16 @@ public class PackageController {
             @ApiResponse(responseCode = "403", description = "Forbidden access to this resource", content = {@Content}),
             @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content})
     })
-    @PostMapping(consumes = { "multipart/form-data" })
+    @PostMapping(consumes = {"multipart/form-data"})
     @Transactional
     public ResponseEntity<ExtendedBaseResponse<PackageResponseDTO>> createPackage(
             @RequestPart("packageData") @Valid PackageRequestDTO packageRequestDTO,
-            @RequestPart("filesImages") List<MultipartFile> filesImages,
+            @RequestPart(value = "filesImages", required = false) List<MultipartFile> filesImages,
+            @RequestPart(value = "bannerPhoto") MultipartFile bannerPhoto,
             UriComponentsBuilder uriComponentsBuilder
     ) {
 
-        packageRequestDTO = new PackageRequestDTO(
-                packageRequestDTO.name(),
-                packageRequestDTO.description(),
-                packageRequestDTO.punctuation(),
-                packageRequestDTO.duration(),
-                packageRequestDTO.itinerary(),
-                packageRequestDTO.physical_level(),
-                packageRequestDTO.technical_level(),
-                packageRequestDTO.included_services(),
-                new ArrayList<>(),
-                filesImages,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                packageRequestDTO.all_months(),
-                packageRequestDTO.active()
-        );
-
-        ExtendedBaseResponse<PackageResponseDTO> packageResponseDTO = packageService.createPackage(packageRequestDTO);
+        ExtendedBaseResponse<PackageResponseDTO> packageResponseDTO = packageService.createPackage(packageRequestDTO, filesImages, bannerPhoto);
 
         URI location = uriComponentsBuilder
                 .path("/packages/{id}")
@@ -140,6 +127,7 @@ public class PackageController {
                 .status(200)
                 .body(packageService.getAllActivePackages(pageable));
     }
+
     @Operation(
             summary = "Obtener todos los Paquetes en una lista paginada y/o ordenada.",
             description = "Permite a un usuario logueado de la empresa obtener todos los paquetes, en una lista paginada."
@@ -191,7 +179,7 @@ public class PackageController {
     ) {
         return ResponseEntity
                 .status(200)
-                .body(packageService.update( packageToUpdateDTO ));
+                .body(packageService.update(packageToUpdateDTO));
     }
 
     @Operation(
@@ -213,10 +201,10 @@ public class PackageController {
     })
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<BaseResponse> deleteNote( @PathVariable Long id ) {
+    public ResponseEntity<BaseResponse> deleteNote(@PathVariable Long id) {
         return ResponseEntity
                 .status(200)
-                .body(packageService.delete( id ));
+                .body(packageService.delete(id));
     }
 
     @Operation(
@@ -243,4 +231,75 @@ public class PackageController {
             @PathVariable Integer departureId) {
         return packageService.removeDepartureFromPackage(packageId, departureId);
     }
+
+    @Operation(
+            summary = "Actualizar una imagen de un Paquete.",
+            description = "Permite agregar o actualizar una imagen en un paquete existente, especificando el tipo de foto (banner/itinerary)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Imagen agregada/actualizada exitosamente.",
+                    content = {
+                            @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ExtendedBaseResponse.class))
+                    }),
+            @ApiResponse(responseCode = "400", description = "Bad request.", content = {@Content}),
+            @ApiResponse(responseCode = "401", description = "Unauthorized.", content = {@Content}),
+            @ApiResponse(responseCode = "403", description = "Forbidden access to this resource", content = {@Content}),
+            @ApiResponse(responseCode = "404", description = "Paquete no encontrado.", content = {@Content}),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content})
+    })
+    @PostMapping("/{packageId}/update-image")
+    public ExtendedBaseResponse<ImageResponseDTO> updateImage(
+            @PathVariable Long packageId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("imageType") String imageType) throws Exception {
+
+        return imageService.updateSingleImage(packageId, file, imageType);
+    }
+
+    @Operation(
+            summary = "Agregar una imagen al Paquete.",
+            description = "Permite agregar una imagen a un paquete existente, especificando el tipo de foto (packageImages/destinyPhotos)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Imagen agregada exitosamente.",
+                    content = {
+                            @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ExtendedBaseResponse.class))
+                    }),
+            @ApiResponse(responseCode = "400", description = "Bad request.", content = {@Content}),
+            @ApiResponse(responseCode = "401", description = "Unauthorized.", content = {@Content}),
+            @ApiResponse(responseCode = "403", description = "Forbidden access to this resource", content = {@Content}),
+            @ApiResponse(responseCode = "404", description = "Paquete no encontrado.", content = {@Content}),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content})
+    })
+    @PostMapping("/{packageId}/add-image")
+    @Transactional
+    public ResponseEntity<ExtendedBaseResponse<List<ImageResponseDTO>>> addImageToPackage(
+            @PathVariable Long packageId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("imageType") String imageType
+    ) {
+        try {
+            // Llamar al servicio para agregar la imagen al paquete
+            ExtendedBaseResponse<List<ImageResponseDTO>> response = imageService.addImageinArray(packageId, file, imageType);
+
+            // Devolver la respuesta con la lista de imágenes asociadas
+            return ResponseEntity
+                    .status(200)
+                    .body(response);
+
+        } catch (Exception e) {
+            // Manejar excepciones (si es necesario, puedes personalizar los mensajes)
+            return ResponseEntity
+                    .status(500)
+                    .body(ExtendedBaseResponse.of(
+                            BaseResponse.ok("Ocurrió un error al agregar la imagen."),
+                            new ArrayList<>()
+                    ));
+        }
+    }
+
 }
